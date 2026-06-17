@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#040a10">
+<title>Pensioenplanner</title>
+<style>
+  :root{
+    --bg:#040a10;
+    --panel:#060d14;
+    --panel-alt:#091828;
+    --border:#16293c;
+    --border-strong:#27425e;
+    --border-soft:#13283d;
+    --text:#ecf4fc;
+    --text-dim:#dcebfa;
+    --muted:#9ab6d2;
+    --muted2:#84a2c0;
+    --muted3:#6d8db0;
+    --green:#2ecc71;
+    --red:#e74c3c;
+    --amber:#f0a500;
+    --blue:#2a7fff;
+    --orange:#e07040;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text-dim);
+    font-family:'Inter',system-ui,sans-serif}
+  #root{min-height:100vh}
+
+  .app{display:flex;flex-direction:column;min-height:100vh}
+
+  .header{background:var(--panel);border-bottom:1px solid var(--border);
+    padding:16px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .header-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--text)}
+  .header-sub{font-size:11px;color:var(--muted2);margin-top:2px;letter-spacing:1px}
+  .header-meta{margin-left:auto;font-size:12px;color:var(--muted2);text-align:right}
+  .header-meta b{color:var(--text-dim)}
+
+  .layout{display:flex;flex:1;gap:16px;padding:16px;flex-wrap:wrap}
+  .sidebar{flex:0 0 340px;display:flex;flex-direction:column;gap:12px;min-width:280px}
+  .main{flex:1;min-width:320px;display:flex;flex-direction:column;gap:12px}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card-title{font-size:12px;text-transform:uppercase;letter-spacing:1px;
+    color:var(--muted);margin:0 0 10px 0;font-weight:600}
+
+  .field{margin-bottom:10px}
+  .field-label{font-size:11px;color:var(--muted);margin-bottom:4px;
+    text-transform:uppercase;letter-spacing:1px}
+  .field-hint{color:var(--blue);text-transform:none;letter-spacing:normal;margin-left:4px}
+  .field-input-wrap{display:flex;align-items:center;background:#000a12;
+    border:1px solid var(--border-strong);border-radius:5px}
+  .field-input{flex:1;background:transparent;border:none;color:var(--text);
+    padding:8px 9px;font-size:14px;font-family:'DM Mono',monospace;outline:none;width:100%}
+  .field-input-full{width:100%;background:#000a12;border:1px solid var(--border-strong);
+    border-radius:5px;color:var(--text);padding:7px 8px;font-size:14px;
+    font-family:inherit;outline:none;box-sizing:border-box}
+  .field-affix{padding:0 8px;color:var(--muted2);font-size:13px}
+  .small-text{font-size:11px;color:var(--muted3);line-height:1.5;margin-top:2px}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;
+    gap:10px;margin-bottom:10px}
+  .toggle{width:38px;height:22px;border-radius:11px;border:1px solid var(--border-strong);
+    background:var(--border-soft);position:relative;cursor:pointer;flex:0 0 auto;padding:0}
+  .toggle-on{background:#0d2a50;border-color:var(--blue)}
+  .toggle-knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+    background:var(--muted2);transition:left .15s,background .15s}
+  .toggle-on .toggle-knob{left:18px;background:var(--blue)}
+
+  .radio-group{display:flex;flex-direction:column;gap:6px}
+  .radio-option{display:flex;align-items:flex-start;gap:8px;cursor:pointer;
+    padding:8px;border:1px solid var(--border-soft);border-radius:5px;background:#000a12}
+  .radio-option.active{border-color:var(--blue);background:#06182c}
+  .radio-option input{margin-top:3px}
+  .radio-option-text b{display:block;font-size:13px;color:var(--text-dim)}
+  .radio-option-text span{font-size:11px;color:var(--muted3)}
+
+  .button{background:var(--border-soft);border:1px solid var(--border-strong);
+    color:var(--text-dim);border-radius:5px;padding:7px 12px;font-size:12px;
+    cursor:pointer;font-family:inherit}
+  .button:hover{border-color:var(--blue)}
+  .button-row{display:flex;gap:8px;flex-wrap:wrap}
+  .button-danger:hover{border-color:var(--red)}
+
+  .post-row{display:grid;grid-template-columns:1fr 110px 130px 28px;gap:6px;
+    align-items:end;margin-bottom:8px}
+  .post-remove{background:none;border:none;color:var(--muted3);cursor:pointer;
+    font-size:16px;line-height:1;padding:8px 0;align-self:center}
+  .post-remove:hover{color:var(--red)}
+
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+  .tab{background:none;border:none;color:var(--muted2);padding:10px 14px;
+    font-size:13px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
+  .tab.active{color:var(--text);border-bottom-color:var(--blue)}
+
+  .banner{padding:10px 14px;border-radius:6px;font-size:12.5px;line-height:1.6;
+    border:1px solid var(--border-soft)}
+  .banner-warning{background:#1a0f06;border-color:#5a3a10;color:#f0c080}
+  .banner-danger{background:#1a0608;border-color:#5a1010;color:#f0a0a0}
+  .banner-info{background:#06182c;border-color:#1a3a5a;color:var(--muted)}
+  .banner-ok{background:#061a0e;border-color:#1a4a30;color:#a0e0b0}
+
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .summary-card{padding:16px;background:var(--panel);border-radius:8px;border:1px solid var(--border)}
+  .summary-card .fase{font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+  .summary-card .periode{font-size:12px;color:var(--muted2);margin-bottom:8px}
+  .summary-card .detail{font-size:11px;color:var(--muted3);line-height:1.6;margin-bottom:10px}
+  .summary-card .eind-label{font-size:11px;color:var(--muted2)}
+  .summary-card .eind-bedrag{font-size:20px;font-weight:600;font-family:'DM Mono',monospace}
+
+  table{width:100%;border-collapse:collapse}
+  th{padding:7px 10px;text-align:right;border-bottom:1px solid var(--border-strong);
+    color:var(--muted2);font-weight:400;font-size:11px;text-transform:uppercase;
+    letter-spacing:.8px;white-space:nowrap;font-family:'DM Mono',monospace}
+  th.th-left{text-align:left}
+  td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--border-soft);
+    font-size:13px;white-space:nowrap;font-family:'DM Mono',monospace}
+  td.td-left{text-align:left}
+  tr.odd{background:var(--panel)}
+  tr.totaalrij{border-top:1px solid #1a3a5a;background:var(--panel-alt)}
+
+  .toelichting{font-size:11px;color:var(--muted3);line-height:1.6;
+    background:#000a12;border:1px solid var(--border-soft);border-radius:6px;
+    padding:10px 12px;margin-bottom:12px}
+  .toelichting-label{color:var(--muted2);text-transform:uppercase;letter-spacing:1px;
+    font-size:10px;display:block;margin-bottom:4px}
+
+  details.subcard{border:1px solid var(--border-soft);border-radius:6px;padding:8px 10px;margin-bottom:10px}
+  details.subcard summary{cursor:pointer;font-size:12px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:1px;outline:none}
+  details.subcard[open] summary{margin-bottom:8px}
+
+  @media (max-width:760px){
+    .layout{flex-direction:column}
+    .sidebar{flex:1 1 auto}
+  }
+</style>
+</head>
+<body>
+<div id="root"><div style="padding:24px;font-family:system-ui,sans-serif">Laden…</div></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+<script>
+const {
+  useState,
+  useEffect,
+  useMemo
+} = React;
+const EUR = new Intl.NumberFormat("nl-NL", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0
+});
+const MONTH_NAMES = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+function parseMonthString(str, fallback) {
+  const m = /^(\d{4})-(\d{2})$/.exec(str || "");
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, 1) : fallback;
+}
+function monthsBetweenClamped(from, to) {
+  const n = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  return Math.max(0, n);
+}
+function maandenSindsPeildatum(datum, peildatum) {
+  return (datum.getFullYear() - peildatum.getFullYear()) * 12 + (datum.getMonth() - peildatum.getMonth());
+}
+function monthLabel(date) {
+  return `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+}
+function ageInYearsAt(date, birthYear, birthMonth) {
+  return date.getFullYear() - birthYear + (date.getMonth() + 1 < birthMonth ? -1 : 0);
+}
+function safeNumber(value, min = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(min, n) : min;
+}
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+function jaarPercentageNaarMaandFactor(jaarPercentage) {
+  return Math.pow(1 + jaarPercentage / 100, 1 / 12) - 1;
+}
+function berekenHypotheeklast(invoer, peildatum, aflossingDatum, globalIndex) {
+  if (invoer.hypotheekMaandlast <= 0) return 0;
+  if (!aflossingDatum) return invoer.hypotheekMaandlast;
+  const maandIndexAflossing = maandenSindsPeildatum(aflossingDatum, peildatum);
+  return globalIndex < maandIndexAflossing ? invoer.hypotheekMaandlast : 0;
+}
+const AOW_TABEL = [{
+  voor: new Date(1948, 0, 1),
+  jaren: 65,
+  maanden: 0,
+  vastgesteld: true
+}, {
+  voor: new Date(1952, 0, 1),
+  jaren: 65,
+  maanden: 6,
+  vastgesteld: true
+}, {
+  voor: new Date(1955, 0, 1),
+  jaren: 66,
+  maanden: 4,
+  vastgesteld: true
+}, {
+  voor: new Date(1957, 2, 1),
+  jaren: 66,
+  maanden: 10,
+  vastgesteld: true
+}, {
+  voor: new Date(1961, 0, 1),
+  jaren: 67,
+  maanden: 0,
+  vastgesteld: true
+}, {
+  voor: new Date(1964, 9, 1),
+  jaren: 67,
+  maanden: 3,
+  vastgesteld: true
+}, {
+  voor: new Date(1970, 0, 1),
+  jaren: 67,
+  maanden: 6,
+  vastgesteld: false
+}, {
+  voor: new Date(1976, 0, 1),
+  jaren: 67,
+  maanden: 9,
+  vastgesteld: false
+}, {
+  voor: new Date(1983, 0, 1),
+  jaren: 68,
+  maanden: 0,
+  vastgesteld: false
+}, {
+  voor: new Date(1990, 0, 1),
+  jaren: 68,
+  maanden: 3,
+  vastgesteld: false
+}, {
+  voor: new Date(1996, 0, 1),
+  jaren: 68,
+  maanden: 6,
+  vastgesteld: false
+}];
+const AOW_FALLBACK = {
+  jaren: 68,
+  maanden: 9,
+  vastgesteld: false
+};
+function berekenAowAutomatisch(geboortejaar, geboortemaand) {
+  const geboortedatum = new Date(geboortejaar, geboortemaand - 1, 1);
+  for (const regel of AOW_TABEL) {
+    if (geboortedatum < regel.voor) {
+      return {
+        jaren: regel.jaren,
+        maanden: regel.maanden,
+        vastgesteld: regel.vastgesteld,
+        bron: "tabel"
+      };
+    }
+  }
+  return {
+    ...AOW_FALLBACK,
+    bron: "tabel"
+  };
+}
+function berekenAowLeeftijd(invoer) {
+  if (invoer.aowHandmatig) {
+    return {
+      jaren: safeNumber(invoer.aowJarenHandmatig, 60),
+      maanden: Math.min(11, Math.max(0, Math.round(safeNumber(invoer.aowMaandenHandmatig, 0)))),
+      vastgesteld: true,
+      bron: "handmatig"
+    };
+  }
+  return berekenAowAutomatisch(invoer.geboortejaar, invoer.geboortemaand);
+}
+function berekenAowDatum(geboortejaar, geboortemaand, aow) {
+  const totaalMaanden = geboortemaand - 1 + aow.jaren * 12 + aow.maanden;
+  const jaar = geboortejaar + Math.floor(totaalMaanden / 12);
+  const maand = totaalMaanden % 12 + 1;
+  return {
+    jaar,
+    maand,
+    datum: new Date(jaar, maand - 1, 1)
+  };
+}
+function verzamelEenmaligeBedragen(posten, peildatum, meldingen) {
+  const bedragenPerMaand = new Map();
+  for (const post of posten) {
+    const bedrag = safeNumber(post.bedrag);
+    if (bedrag <= 0) continue;
+    const datum = parseMonthString(post.datum, null);
+    if (!datum) continue;
+    let maandIndex = maandenSindsPeildatum(datum, peildatum);
+    if (maandIndex < 0) {
+      meldingen.push(`${post.naam || "Eenmalig bedrag"}: datum ligt vóór de peildatum — bedrag wordt op de startmaand bijgeboekt.`);
+      maandIndex = 0;
+    }
+    bedragenPerMaand.set(maandIndex, (bedragenPerMaand.get(maandIndex) || 0) + bedrag);
+  }
+  return bedragenPerMaand;
+}
+function berekenFase1(invoer, peildatum, stopDatum, eenmaligeBedragen) {
+  const maandRendementBelegging = jaarPercentageNaarMaandFactor(invoer.rendementBelegging);
+  const maandRenteCash = jaarPercentageNaarMaandFactor(invoer.renteCash);
+  const aantalMaanden = monthsBetweenClamped(peildatum, stopDatum);
+  let belegging = invoer.startBelegging;
+  let cash = invoer.startCash;
+  const serie = [{
+    maand: 0,
+    totaal: belegging + cash,
+    fase: 1
+  }];
+  const jaarRijen = [];
+  let inlegJaar = 0,
+    rendementJaar = 0,
+    eenmaligJaar = 0;
+  for (let maand = 0; maand < aantalMaanden; maand++) {
+    const huidigeDatum = new Date(peildatum.getFullYear(), peildatum.getMonth() + maand, 1);
+    const storting = invoer.inflatieAan && invoer.stortingMeeInflatie ? invoer.maandStorting * Math.pow(1 + invoer.inflatie / 100, maand / 12) : invoer.maandStorting;
+    const eenmalig = eenmaligeBedragen.get(maand) || 0;
+    const rendementDezeMaand = belegging * maandRendementBelegging + cash * maandRenteCash;
+    belegging = belegging * (1 + maandRendementBelegging) + storting + eenmalig;
+    cash = cash * (1 + maandRenteCash);
+    inlegJaar += storting;
+    rendementJaar += rendementDezeMaand;
+    eenmaligJaar += eenmalig;
+    serie.push({
+      maand: maand + 1,
+      totaal: belegging + cash,
+      fase: 1
+    });
+    const laatsteMaand = maand === aantalMaanden - 1;
+    if (huidigeDatum.getMonth() === 11 || laatsteMaand) {
+      jaarRijen.push({
+        label: huidigeDatum.getMonth() === 11 ? `${huidigeDatum.getFullYear()}` : `${huidigeDatum.getFullYear()} (t/m ${MONTH_NAMES[huidigeDatum.getMonth()]})`,
+        inleg: Math.round(inlegJaar),
+        rendement: Math.round(rendementJaar),
+        extra: Math.round(eenmaligJaar),
+        belegging: Math.round(belegging),
+        cash: Math.round(cash),
+        totaal: Math.round(belegging + cash)
+      });
+      inlegJaar = 0;
+      rendementJaar = 0;
+      eenmaligJaar = 0;
+    }
+  }
+  return {
+    aantalMaanden,
+    beleggingEind: Math.round(belegging),
+    cashEind: Math.round(cash),
+    totaalEind: belegging + cash,
+    jaarRijen,
+    serie
+  };
+}
+function berekenFase2(invoer, peildatum, stopDatum, pensioenDatum, startBelegging, startCash, eenmaligeBedragen) {
+  const maandRendementBelegging = jaarPercentageNaarMaandFactor(invoer.rendementBelegging);
+  const maandRenteCash = jaarPercentageNaarMaandFactor(invoer.renteCash);
+  const aantalMaanden = monthsBetweenClamped(stopDatum, pensioenDatum);
+  const indexOffset = monthsBetweenClamped(peildatum, stopDatum);
+  const aflossingDatum = parseMonthString(invoer.hypotheekAflossingDatum, null);
+  let belegging = startBelegging;
+  let cash = startCash;
+  let tekort = false;
+  let tekortDatum = null;
+  let tekortBedragCumulatief = 0;
+  const serie = [];
+  const jaarRijen = [];
+  let beginSaldoJaar = belegging + cash;
+  let rendementJaar = 0,
+    onttrokkenJaar = 0,
+    inkomenJaar = 0,
+    eenmaligJaar = 0;
+  for (let maand = 0; maand < aantalMaanden; maand++) {
+    const globalIndex = indexOffset + maand;
+    const huidigeDatum = new Date(stopDatum.getFullYear(), stopDatum.getMonth() + maand + 1, 1);
+    const kostenInflatieFactor = invoer.inflatieAan ? Math.pow(1 + invoer.inflatie / 100, (globalIndex + 1) / 12) : 1;
+    const inkomenIndexatieFactor = Math.pow(1 + invoer.indexatieInkomen / 100, (globalIndex + 1) / 12);
+    const hypotheeklast = berekenHypotheeklast(invoer, peildatum, aflossingDatum, globalIndex);
+    const uitgaven = invoer.uitgavenOverbrugging * kostenInflatieFactor - hypotheeklast;
+    const extraInkomen = invoer.extraInkomenPerMaand * inkomenIndexatieFactor;
+    const eenmalig = eenmaligeBedragen.get(globalIndex) || 0;
+    const rendement = belegging * maandRendementBelegging + cash * maandRenteCash;
+    belegging += belegging * maandRendementBelegging;
+    cash += cash * maandRenteCash;
+    const nettoBehoefte = uitgaven - extraInkomen - eenmalig;
+    if (nettoBehoefte >= 0) {
+      const uitCash = Math.min(cash, nettoBehoefte);
+      cash -= uitCash;
+      let rest = nettoBehoefte - uitCash;
+      const uitBelegging = Math.min(Math.max(belegging, 0), rest);
+      belegging -= uitBelegging;
+      rest -= uitBelegging;
+      if (rest > 1e-6) {
+        if (!tekort) {
+          tekort = true;
+          tekortDatum = huidigeDatum;
+        }
+        if (invoer.tekortGedrag === "nul") {
+          tekortBedragCumulatief += rest;
+        } else {
+          belegging -= rest;
+        }
+      }
+    } else {
+      cash += -nettoBehoefte;
+    }
+    rendementJaar += rendement;
+    onttrokkenJaar += uitgaven;
+    inkomenJaar += extraInkomen;
+    eenmaligJaar += eenmalig;
+    serie.push({
+      maand: globalIndex,
+      totaal: belegging + cash,
+      fase: 2
+    });
+    const laatsteMaand = maand === aantalMaanden - 1;
+    if ((maand + 1) % 12 === 0 || laatsteMaand) {
+      jaarRijen.push({
+        jaar: huidigeDatum.getFullYear(),
+        leeftijd: ageInYearsAt(huidigeDatum, invoer.geboortejaar, invoer.geboortemaand),
+        beginSaldo: Math.round(beginSaldoJaar),
+        rendement: Math.round(rendementJaar),
+        onttrokken: Math.round(onttrokkenJaar),
+        inkomen: Math.round(inkomenJaar),
+        extra: Math.round(eenmaligJaar),
+        cash: Math.round(cash),
+        belegging: Math.round(belegging),
+        eindSaldo: Math.round(belegging + cash)
+      });
+      beginSaldoJaar = belegging + cash;
+      rendementJaar = 0;
+      onttrokkenJaar = 0;
+      inkomenJaar = 0;
+      eenmaligJaar = 0;
+    }
+  }
+  return {
+    aantalMaanden,
+    beleggingEind: belegging,
+    cashEind: cash,
+    eindVermogen: belegging + cash,
+    tekort,
+    tekortDatum,
+    tekortBedragCumulatief,
+    jaarRijen,
+    serie
+  };
+}
+function berekenFase3(invoer, peildatum, pensioenDatum, startBelegging, startCash, eenmaligeBedragen) {
+  const maandRendementBelegging = jaarPercentageNaarMaandFactor(invoer.rendementBelegging);
+  const maandRenteCash = jaarPercentageNaarMaandFactor(invoer.renteCash);
+  const overlijdenDatum = new Date(invoer.geboortejaar + invoer.leeftijdOverlijden, invoer.geboortemaand - 1, 1);
+  const aantalMaanden = monthsBetweenClamped(pensioenDatum, overlijdenDatum);
+  const indexOffset = monthsBetweenClamped(peildatum, pensioenDatum);
+  const aflossingDatum = parseMonthString(invoer.hypotheekAflossingDatum, null);
+  let belegging = startBelegging;
+  let cash = startCash;
+  let tekort = false;
+  let tekortDatum = null;
+  let tekortBedragCumulatief = 0;
+  const tekortPerMaandNominaal = Math.max(0, invoer.uitgavenPensioen - invoer.pensioenInkomen);
+  const serie = [];
+  const jaarRijen = [];
+  let beginSaldoJaar = belegging + cash;
+  let rendementJaar = 0,
+    uitgavenJaar = 0,
+    inkomenJaar = 0,
+    eenmaligJaar = 0;
+  for (let maand = 0; maand < aantalMaanden; maand++) {
+    const globalIndex = indexOffset + maand;
+    const huidigeDatum = new Date(pensioenDatum.getFullYear(), pensioenDatum.getMonth() + maand + 1, 1);
+    const kostenInflatieFactor = invoer.inflatieAan ? Math.pow(1 + invoer.inflatie / 100, (globalIndex + 1) / 12) : 1;
+    const inkomenIndexatieFactor = Math.pow(1 + invoer.indexatieInkomen / 100, (globalIndex + 1) / 12);
+    const hypotheeklast = berekenHypotheeklast(invoer, peildatum, aflossingDatum, globalIndex);
+    const uitgaven = invoer.uitgavenPensioen * kostenInflatieFactor - hypotheeklast;
+    const inkomen = invoer.pensioenInkomen * inkomenIndexatieFactor;
+    const eenmalig = eenmaligeBedragen.get(globalIndex) || 0;
+    const rendement = belegging * maandRendementBelegging + cash * maandRenteCash;
+    belegging += belegging * maandRendementBelegging;
+    cash += cash * maandRenteCash;
+    const nettoBehoefte = uitgaven - inkomen - eenmalig;
+    if (nettoBehoefte >= 0) {
+      const uitCash = Math.min(cash, nettoBehoefte);
+      cash -= uitCash;
+      let rest = nettoBehoefte - uitCash;
+      const uitBelegging = Math.min(Math.max(belegging, 0), rest);
+      belegging -= uitBelegging;
+      rest -= uitBelegging;
+      if (rest > 1e-6) {
+        if (!tekort) {
+          tekort = true;
+          tekortDatum = huidigeDatum;
+        }
+        if (invoer.tekortGedrag === "nul") {
+          tekortBedragCumulatief += rest;
+        } else {
+          belegging -= rest;
+        }
+      }
+    } else {
+      cash += -nettoBehoefte;
+    }
+    rendementJaar += rendement;
+    uitgavenJaar += uitgaven;
+    inkomenJaar += inkomen;
+    eenmaligJaar += eenmalig;
+    serie.push({
+      maand: globalIndex,
+      totaal: belegging + cash,
+      fase: 3
+    });
+    const laatsteMaand = maand === aantalMaanden - 1;
+    if ((maand + 1) % 12 === 0 || laatsteMaand) {
+      jaarRijen.push({
+        leeftijd: ageInYearsAt(huidigeDatum, invoer.geboortejaar, invoer.geboortemaand),
+        beginSaldo: Math.round(beginSaldoJaar),
+        rendement: Math.round(rendementJaar),
+        inkomen: Math.round(inkomenJaar),
+        uitgaven: Math.round(uitgavenJaar),
+        extra: Math.round(eenmaligJaar),
+        cash: Math.round(cash),
+        belegging: Math.round(belegging),
+        eindSaldo: Math.round(belegging + cash)
+      });
+      beginSaldoJaar = belegging + cash;
+      rendementJaar = 0;
+      uitgavenJaar = 0;
+      inkomenJaar = 0;
+      eenmaligJaar = 0;
+    }
+  }
+  return {
+    aantalMaanden,
+    beleggingEind: Math.round(belegging),
+    cashEind: Math.round(cash),
+    eindVermogen: Math.round(belegging + cash),
+    tekort,
+    tekortDatum,
+    tekortBedragCumulatief,
+    tekortPerMaandNominaal,
+    jaarRijen,
+    serie
+  };
+}
+function normaliseerInvoer(ruw) {
+  return {
+    ...ruw,
+    startBelegging: safeNumber(ruw.startBelegging),
+    startCash: safeNumber(ruw.startCash),
+    maandStorting: safeNumber(ruw.maandStorting),
+    rendementBelegging: safeNumber(ruw.rendementBelegging, -100),
+    renteCash: safeNumber(ruw.renteCash, -100),
+    geboortejaar: safeNumber(ruw.geboortejaar, 1900),
+    geboortemaand: Math.min(12, Math.max(1, Math.round(safeNumber(ruw.geboortemaand, 1)))),
+    posten: (ruw.posten || []).map(p => ({
+      ...p,
+      bedrag: safeNumber(p.bedrag)
+    })),
+    extraInkomenPerMaand: safeNumber(ruw.extraInkomenPerMaand),
+    uitgavenOverbrugging: safeNumber(ruw.uitgavenOverbrugging),
+    uitgavenPensioen: safeNumber(ruw.uitgavenPensioen),
+    pensioenInkomen: safeNumber(ruw.pensioenInkomen),
+    leeftijdOverlijden: safeNumber(ruw.leeftijdOverlijden, 60),
+    inflatie: safeNumber(ruw.inflatie, 0),
+    inflatieAan: !!ruw.inflatieAan,
+    indexatieInkomen: safeNumber(ruw.indexatieInkomen, 0),
+    huisWaarde: safeNumber(ruw.huisWaarde),
+    huisHypotheek: safeNumber(ruw.huisHypotheek),
+    huisOverwaardeMeenemen: !!ruw.huisOverwaardeMeenemen,
+    hypotheekMaandlast: safeNumber(ruw.hypotheekMaandlast),
+    hypotheekAflossingDatum: ruw.hypotheekAflossingDatum || "",
+    stortingMeeInflatie: !!ruw.stortingMeeInflatie,
+    aowHandmatig: !!ruw.aowHandmatig,
+    aowJarenHandmatig: safeNumber(ruw.aowJarenHandmatig, 60),
+    aowMaandenHandmatig: Math.min(11, Math.max(0, Math.round(safeNumber(ruw.aowMaandenHandmatig, 0)))),
+    tekortGedrag: ruw.tekortGedrag === "nul" ? "nul" : "doorrekenen"
+  };
+}
+function berekenPlan(ruweInvoer) {
+  const nu = new Date();
+  const peildatum = new Date(nu.getFullYear(), nu.getMonth(), 1);
+  const invoer = normaliseerInvoer(ruweInvoer);
+  const meldingen = [];
+  const aow = berekenAowLeeftijd(invoer);
+  const aowDatum = berekenAowDatum(invoer.geboortejaar, invoer.geboortemaand, aow);
+  const pensioenDatum = aowDatum.datum;
+  const stopDatum = parseMonthString(invoer.stopDatum, peildatum) < peildatum ? peildatum : parseMonthString(invoer.stopDatum, peildatum);
+  if (pensioenDatum <= stopDatum) {
+    meldingen.push("Pensioendatum (AOW-leeftijd) ligt niet na de stopdatum — overbrugging (fase 2) is 0 maanden.");
+  }
+  if (parseMonthString(invoer.stopDatum, peildatum) <= peildatum) {
+    meldingen.push("Stopdatum ligt niet na de peildatum (huidige maand) — opbouwfase (fase 1) is 0 maanden.");
+  }
+  if (!aow.vastgesteld) {
+    meldingen.push("AOW-leeftijd is voor deze geboortedatum nog niet wettelijk vastgesteld — getoonde leeftijd is een prognose. " + "Je kunt dit overschrijven via 'AOW-leeftijd handmatig instellen'.");
+  }
+  const eenmaligeBedragen = verzamelEenmaligeBedragen(invoer.posten, peildatum, meldingen);
+  const fase1 = berekenFase1(invoer, peildatum, stopDatum, eenmaligeBedragen);
+  const fase2 = berekenFase2(invoer, peildatum, stopDatum, pensioenDatum, fase1.beleggingEind, fase1.cashEind, eenmaligeBedragen);
+  const fase3 = berekenFase3(invoer, peildatum, pensioenDatum, fase2.beleggingEind, fase2.cashEind, eenmaligeBedragen);
+  if (fase2.tekort && invoer.tekortGedrag === "doorrekenen") {
+    meldingen.push("Vermogen wordt negatief tijdens de overbrugging — de doorrekening laat zien hoe diep dit gat wordt " + "(theoretisch scenario). Zet 'bij tekort' op 'niet onder € 0' om dit te begrenzen.");
+  }
+  if (fase3.tekort && invoer.tekortGedrag === "doorrekenen") {
+    meldingen.push("Vermogen wordt negatief tijdens de pensioenfase — de doorrekening laat zien hoe diep dit gat wordt " + "(theoretisch scenario). Zet 'bij tekort' op 'niet onder € 0' om dit te begrenzen.");
+  }
+  const tekortDatum = fase2.tekortDatum || fase3.tekortDatum;
+  return {
+    invoer,
+    peildatum,
+    stopDatum,
+    pensioenDatum,
+    aow,
+    fase1,
+    fase2,
+    fase3,
+    tekortDatum,
+    meldingen,
+    heeftTekort: fase2.tekort || fase3.tekort
+  };
+}
+function Veld({
+  label,
+  value,
+  onChange,
+  prefix,
+  suffix,
+  step = 1,
+  min,
+  hint
+}) {
+  return React.createElement("div", {
+    className: "field"
+  }, React.createElement("div", {
+    className: "field-label"
+  }, label, hint && React.createElement("span", {
+    className: "field-hint"
+  }, hint)), React.createElement("div", {
+    className: "field-input-wrap"
+  }, prefix && React.createElement("span", {
+    className: "field-affix"
+  }, prefix), React.createElement("input", {
+    type: "number",
+    className: "field-input",
+    value: value,
+    step: step,
+    min: min,
+    onChange: e => onChange(e.target.value)
+  }), suffix && React.createElement("span", {
+    className: "field-affix"
+  }, suffix)));
+}
+function MaandVeld({
+  label,
+  value,
+  onChange,
+  hint
+}) {
+  return React.createElement("div", {
+    className: "field"
+  }, React.createElement("div", {
+    className: "field-label"
+  }, label, hint && React.createElement("span", {
+    className: "field-hint"
+  }, hint)), React.createElement("input", {
+    type: "month",
+    className: "field-input-full",
+    value: value,
+    onChange: e => onChange(e.target.value)
+  }));
+}
+function Toggle({
+  label,
+  value,
+  onChange,
+  hint
+}) {
+  return React.createElement("div", {
+    className: "toggle-row"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "field-label",
+    style: {
+      marginBottom: hint ? 2 : 0
+    }
+  }, label), hint && React.createElement("div", {
+    className: "small-text"
+  }, hint)), React.createElement("button", {
+    type: "button",
+    className: "toggle" + (value ? " toggle-on" : ""),
+    onClick: () => onChange(!value),
+    "aria-pressed": value
+  }, React.createElement("span", {
+    className: "toggle-knob"
+  })));
+}
+function Card({
+  title,
+  children
+}) {
+  return React.createElement("section", {
+    className: "card"
+  }, React.createElement("h2", {
+    className: "card-title"
+  }, title), children);
+}
+function Th({
+  children,
+  left
+}) {
+  return React.createElement("th", {
+    className: left ? "th-left" : ""
+  }, children);
+}
+function Td({
+  value,
+  color,
+  bold,
+  left
+}) {
+  return React.createElement("td", {
+    className: left ? "td-left" : "",
+    style: {
+      color: color || undefined,
+      fontWeight: bold ? 600 : 400
+    }
+  }, value);
+}
+function Toelichting({
+  children
+}) {
+  return React.createElement("div", {
+    className: "toelichting"
+  }, React.createElement("span", {
+    className: "toelichting-label"
+  }, "Berekening & aannames"), children);
+}
+function Banner({
+  type = "info",
+  children
+}) {
+  return React.createElement("div", {
+    className: "banner banner-" + type
+  }, children);
+}
+const STORAGE_KEY = "pensioenplanner-data-v2";
+function nieuwePostId() {
+  return Date.now() + Math.floor(Math.random() * 1000);
+}
+function defaultForm() {
+  return {
+    stopDatum: "",
+    startBelegging: 0,
+    startCash: 0,
+    maandStorting: 0,
+    stortingMeeInflatie: false,
+    rendementBelegging: 5,
+    renteCash: 2,
+    inflatieAan: true,
+    inflatie: 2,
+    indexatieInkomen: 0,
+    geboortejaar: 1980,
+    geboortemaand: 1,
+    aowHandmatig: false,
+    aowJarenHandmatig: 67,
+    aowMaandenHandmatig: 0,
+    posten: [{
+      id: nieuwePostId(),
+      naam: "",
+      bedrag: 0,
+      datum: ""
+    }],
+    uitgavenOverbrugging: 0,
+    extraInkomenPerMaand: 0,
+    uitgavenPensioen: 0,
+    pensioenInkomen: 0,
+    leeftijdOverlijden: 85,
+    huisWaarde: 0,
+    huisHypotheek: 0,
+    huisOverwaardeMeenemen: true,
+    hypotheekMaandlast: 0,
+    hypotheekAflossingDatum: "",
+    tekortGedrag: "doorrekenen"
+  };
+}
+function laadOpgeslagenForm() {
+  try {
+    const ruw = localStorage.getItem(STORAGE_KEY);
+    if (!ruw) return defaultForm();
+    const opgeslagen = JSON.parse(ruw);
+    return {
+      ...defaultForm(),
+      ...opgeslagen
+    };
+  } catch (e) {
+    console.warn("Kon opgeslagen gegevens niet laden:", e);
+    return defaultForm();
+  }
+}
+function Pensioenplanner() {
+  const [tab, setTab] = useState("overzicht");
+  const [form, setForm] = useState(laadOpgeslagenForm);
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
+    } catch (e) {
+      console.warn("Kon gegevens niet opslaan:", e);
+    }
+  }, [form]);
+  const set = key => value => setForm(f => ({
+    ...f,
+    [key]: value
+  }));
+  const setNum = key => value => setForm(f => ({
+    ...f,
+    [key]: value === "" ? "" : Number(value)
+  }));
+  const setPostVeld = (id, key) => value => setForm(f => ({
+    ...f,
+    posten: f.posten.map(p => p.id === id ? {
+      ...p,
+      [key]: key === "bedrag" ? value === "" ? "" : Number(value) : value
+    } : p)
+  }));
+  const voegPostToe = () => setForm(f => ({
+    ...f,
+    posten: [...f.posten, {
+      id: nieuwePostId(),
+      naam: "",
+      bedrag: 0,
+      datum: ""
+    }]
+  }));
+  const verwijderPost = id => () => setForm(f => ({
+    ...f,
+    posten: f.posten.filter(p => p.id !== id)
+  }));
+  const resetAlles = () => {
+    if (!window.confirm("Alle invoer wissen en terugzetten naar de standaardwaarden?")) return;
+    setForm(defaultForm());
+  };
+  const exporteer = () => {
+    const blob = new Blob([JSON.stringify(form, null, 2)], {
+      type: "application/json"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pensioenplanner-gegevens.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const importeer = e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        setForm({
+          ...defaultForm(),
+          ...data
+        });
+      } catch (err) {
+        window.alert("Bestand kon niet worden gelezen: ongeldig JSON-bestand.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+  const plan = useMemo(() => berekenPlan(form), [form]);
+  const {
+    invoer: T,
+    peildatum,
+    stopDatum,
+    pensioenDatum,
+    aow,
+    fase1,
+    fase2,
+    fase3,
+    tekortDatum,
+    meldingen,
+    heeftTekort
+  } = plan;
+  const huidigeLeeftijd = ageInYearsAt(peildatum, T.geboortejaar, T.geboortemaand);
+  const aowTekst = `${aow.jaren} jaar${aow.maanden > 0 ? ` en ${aow.maanden} mnd` : ""}`;
+  const aowBronTekst = aow.bron === "handmatig" ? "handmatig ingesteld" : aow.vastgesteld ? "vastgesteld" : "prognose";
+  const KLEUR_GROEN = "#2ecc71",
+    KLEUR_ROOD = "#e74c3c",
+    KLEUR_AMBER = "#f0a500",
+    KLEUR_BLAUW = "#2a7fff",
+    KLEUR_ORANJE = "#e07040";
+  return React.createElement("div", {
+    className: "app"
+  }, React.createElement("header", {
+    className: "header"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "header-title"
+  }, "Pensioenplanner"), React.createElement("div", {
+    className: "header-sub"
+  }, "VERMOGENSONTWIKKELING · OVERBRUGGING · PENSIOEN")), React.createElement("div", {
+    className: "header-meta"
+  }, "Peildatum ", React.createElement("b", null, monthLabel(peildatum)), React.createElement("span", {
+    style: {
+      margin: "0 6px"
+    }
+  }, "·"), "AOW-leeftijd ", React.createElement("b", {
+    style: {
+      color: KLEUR_BLAUW
+    }
+  }, aowTekst), React.createElement("span", {
+    style: {
+      color: aow.vastgesteld ? "#6d8db0" : KLEUR_AMBER,
+      marginLeft: 5,
+      fontSize: 11
+    }
+  }, "(", aowBronTekst, ")"), React.createElement("span", {
+    style: {
+      margin: "0 6px"
+    }
+  }, "·"), "pensioendatum ", React.createElement("b", {
+    style: {
+      color: KLEUR_BLAUW
+    }
+  }, monthLabel(pensioenDatum))), React.createElement("div", {
+    style: {
+      padding: "6px 14px",
+      borderRadius: 6,
+      fontSize: 12,
+      fontWeight: 600,
+      background: heeftTekort ? "#1a0608" : "#061a0e",
+      color: heeftTekort ? KLEUR_ROOD : KLEUR_GROEN,
+      border: `1px solid ${heeftTekort ? "#5a1010" : "#1a4a30"}`
+    }
+  }, heeftTekort ? "Tekort in plan" : "Geen tekort")), React.createElement("div", {
+    className: "layout"
+  }, React.createElement("aside", {
+    className: "sidebar"
+  }, React.createElement(Card, {
+    title: "Geboortedatum & stopdatum"
+  }, React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, React.createElement(Veld, {
+    label: "Geboortejaar",
+    value: T.geboortejaar,
+    onChange: setNum("geboortejaar"),
+    min: 1900
+  })), React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, React.createElement(Veld, {
+    label: "Geboortemaand",
+    value: T.geboortemaand,
+    onChange: setNum("geboortemaand"),
+    min: 1,
+    step: 1,
+    suffix: "(1-12)"
+  }))), React.createElement("div", {
+    className: "small-text",
+    style: {
+      marginBottom: 10
+    }
+  }, "Huidige leeftijd: ", React.createElement("b", {
+    style: {
+      color: "#ecf4fc"
+    }
+  }, huidigeLeeftijd, " jaar"), "."), React.createElement(MaandVeld, {
+    label: "Stopdatum (einde opbouwfase / start overbrugging)",
+    value: T.stopDatum,
+    onChange: set("stopDatum"),
+    hint: "leeg = nu"
+  }), React.createElement("div", {
+    className: "small-text"
+  }, "Peildatum is altijd de huidige maand (", monthLabel(peildatum), ") en is niet aanpasbaar. Vanaf de stopdatum begint fase 2 (overbrugging) tot de pensioendatum (AOW-leeftijd, zie hierboven), daarna loopt fase 3 (pensioen) door tot de ingestelde planningshorizon (zie 'Pensioen (fase 3)').")), React.createElement(Card, {
+    title: "Vermogen & opbouw (fase 1)"
+  }, React.createElement(Veld, {
+    label: "Startvermogen beleggingen",
+    value: T.startBelegging,
+    onChange: setNum("startBelegging"),
+    prefix: "€"
+  }), React.createElement(Veld, {
+    label: "Startvermogen cash/spaargeld",
+    value: T.startCash,
+    onChange: setNum("startCash"),
+    prefix: "€"
+  }), React.createElement(Veld, {
+    label: "Maandelijkse storting",
+    value: T.maandStorting,
+    onChange: setNum("maandStorting"),
+    prefix: "€"
+  }), React.createElement(Veld, {
+    label: "Rendement beleggingen",
+    value: T.rendementBelegging,
+    onChange: setNum("rendementBelegging"),
+    suffix: "% / jr",
+    step: 0.1
+  }), React.createElement(Veld, {
+    label: "Rente cash/spaargeld",
+    value: T.renteCash,
+    onChange: setNum("renteCash"),
+    suffix: "% / jr",
+    step: 0.1
+  })), React.createElement(Card, {
+    title: "Overbrugging (fase 2)"
+  }, React.createElement(Veld, {
+    label: "Uitgaven per maand",
+    value: T.uitgavenOverbrugging,
+    onChange: setNum("uitgavenOverbrugging"),
+    prefix: "€"
+  }), React.createElement(Veld, {
+    label: "Extra inkomen per maand",
+    value: T.extraInkomenPerMaand,
+    onChange: setNum("extraInkomenPerMaand"),
+    prefix: "€"
+  }), React.createElement("div", {
+    className: "small-text"
+  }, "Cash en beleggingen blijven ook in deze fase apart, elk met hun eigen rendement (beleggingen ", T.rendementBelegging, "%/jr, cash ", T.renteCash, "%/jr). Onttrekking gaat eerst volledig uit cash en pas daarna uit beleggingen.")), React.createElement(Card, {
+    title: "Pensioen (fase 3)"
+  }, React.createElement(Veld, {
+    label: "Uitgaven per maand",
+    value: T.uitgavenPensioen,
+    onChange: setNum("uitgavenPensioen"),
+    prefix: "€"
+  }), React.createElement(Veld, {
+    label: "Pensioen + AOW per maand",
+    value: T.pensioenInkomen,
+    onChange: setNum("pensioenInkomen"),
+    prefix: "€"
+  }), React.createElement(Veld, {
+    label: "Doorrekenen tot leeftijd (planningshorizon)",
+    value: T.leeftijdOverlijden,
+    onChange: setNum("leeftijdOverlijden"),
+    suffix: "jaar",
+    hint: "geen sterftescenario, alleen het eindpunt van de berekening"
+  })), React.createElement(Card, {
+    title: "Eenmalige bedragen"
+  }, React.createElement("div", {
+    className: "post-row",
+    style: {
+      marginBottom: 4
+    }
+  }, React.createElement("div", {
+    className: "field-label"
+  }, "Naam"), React.createElement("div", {
+    className: "field-label"
+  }, "Bedrag"), React.createElement("div", {
+    className: "field-label"
+  }, "Maand"), React.createElement("div", null)), T.posten.map(p => React.createElement("div", {
+    className: "post-row",
+    key: p.id
+  }, React.createElement("input", {
+    className: "field-input-full",
+    type: "text",
+    value: p.naam,
+    placeholder: "bijv. erfenis",
+    onChange: e => setPostVeld(p.id, "naam")(e.target.value)
+  }), React.createElement("div", {
+    className: "field-input-wrap"
+  }, React.createElement("span", {
+    className: "field-affix"
+  }, "€"), React.createElement("input", {
+    className: "field-input",
+    type: "number",
+    value: p.bedrag,
+    onChange: e => setPostVeld(p.id, "bedrag")(e.target.value)
+  })), React.createElement("input", {
+    className: "field-input-full",
+    type: "month",
+    value: p.datum,
+    onChange: e => setPostVeld(p.id, "datum")(e.target.value)
+  }), React.createElement("button", {
+    className: "post-remove",
+    onClick: verwijderPost(p.id),
+    title: "Verwijderen"
+  }, "×"))), React.createElement("button", {
+    className: "button",
+    onClick: voegPostToe
+  }, "+ Bedrag toevoegen"), React.createElement("div", {
+    className: "small-text",
+    style: {
+      marginTop: 8
+    }
+  }, "Een bedrag wordt geboekt in de opgegeven maand en draait vanaf dat moment rendement mee, ongeacht in welke fase die maand valt. Een datum vóór de peildatum wordt op de startmaand geboekt.")), React.createElement(Card, {
+    title: "Hypotheek"
+  }, React.createElement(Veld, {
+    label: "Hypotheeklast per maand",
+    value: T.hypotheekMaandlast,
+    onChange: setNum("hypotheekMaandlast"),
+    prefix: "€",
+    hint: "zit al in 'uitgaven per maand', wordt daar tot de aflossing weer afgetrokken"
+  }), React.createElement(MaandVeld, {
+    label: "Hypotheek afgelost per",
+    value: T.hypotheekAflossingDatum,
+    onChange: set("hypotheekAflossingDatum"),
+    hint: "leeg = nooit (aflossingsvrij)"
+  }), React.createElement("div", {
+    className: "small-text"
+  }, "Tot deze datum wordt de hypotheeklast (nominaal, zonder indexatie) van je uitgaven afgetrokken; daarna valt de last weg en gelden de volledige uitgaven weer. De overwaarde van het huis telt bewust niet als vermogen mee, want die zit vast in de woning en is geen besteedbaar geld.")), React.createElement(Card, {
+    title: "Aannames & instellingen"
+  }, React.createElement(Toggle, {
+    label: "Kosteninflatie meenemen",
+    value: T.inflatieAan,
+    onChange: set("inflatieAan"),
+    hint: "Uitgaven (en optioneel de storting) groeien jaarlijks mee, cumulatief vanaf de peildatum."
+  }), T.inflatieAan && React.createElement(Veld, {
+    label: "Kosteninflatie",
+    value: T.inflatie,
+    onChange: setNum("inflatie"),
+    suffix: "% / jr",
+    step: 0.1
+  }), T.inflatieAan && React.createElement(Toggle, {
+    label: "Maandelijkse storting groeit mee met inflatie",
+    value: T.stortingMeeInflatie,
+    onChange: set("stortingMeeInflatie"),
+    hint: "Staat uit: storting blijft een vast nominaal bedrag tijdens de opbouwfase."
+  }), React.createElement(Veld, {
+    label: "Indexatie pensioen + AOW + extra inkomen",
+    value: T.indexatieInkomen,
+    onChange: setNum("indexatieInkomen"),
+    suffix: "% / jr",
+    step: 0.1,
+    hint: "0% = geen automatische verhoging (niet zeker dat inkomen meegroeit met inflatie)"
+  }), React.createElement("details", {
+    className: "subcard"
+  }, React.createElement("summary", null, "AOW-leeftijd"), React.createElement("div", {
+    className: "small-text",
+    style: {
+      marginBottom: 8
+    }
+  }, "Standaard wordt de AOW-leeftijd automatisch bepaald aan de hand van een tabel op basis van het geboortejaar. Voor geboortejaren vanaf ca. 1970 is dit nog een prognose. Zet hier een eigen AOW-leeftijd neer als je een andere aanname wilt gebruiken."), React.createElement(Toggle, {
+    label: "AOW-leeftijd handmatig instellen",
+    value: T.aowHandmatig,
+    onChange: set("aowHandmatig")
+  }), T.aowHandmatig && React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, React.createElement(Veld, {
+    label: "Jaren",
+    value: T.aowJarenHandmatig,
+    onChange: setNum("aowJarenHandmatig")
+  })), React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, React.createElement(Veld, {
+    label: "Maanden",
+    value: T.aowMaandenHandmatig,
+    onChange: setNum("aowMaandenHandmatig"),
+    min: 0,
+    max: 11
+  })))), React.createElement("details", {
+    className: "subcard"
+  }, React.createElement("summary", null, "Bij een tekort"), React.createElement("div", {
+    className: "small-text",
+    style: {
+      marginBottom: 8
+    }
+  }, "Wat moet er gebeuren als het vermogen in fase 2 of 3 op zou raken?"), React.createElement("div", {
+    className: "radio-group"
+  }, React.createElement("label", {
+    className: "radio-option" + (T.tekortGedrag === "doorrekenen" ? " active" : "")
+  }, React.createElement("input", {
+    type: "radio",
+    name: "tekortGedrag",
+    checked: T.tekortGedrag === "doorrekenen",
+    onChange: () => set("tekortGedrag")("doorrekenen")
+  }), React.createElement("div", {
+    className: "radio-option-text"
+  }, React.createElement("b", null, "Doorrekenen"), React.createElement("span", null, "Het vermogen mag negatief worden. Laat zien hoe diep en hoe snel het tekort oploopt."))), React.createElement("label", {
+    className: "radio-option" + (T.tekortGedrag === "nul" ? " active" : "")
+  }, React.createElement("input", {
+    type: "radio",
+    name: "tekortGedrag",
+    checked: T.tekortGedrag === "nul",
+    onChange: () => set("tekortGedrag")("nul")
+  }), React.createElement("div", {
+    className: "radio-option-text"
+  }, React.createElement("b", null, "Niet onder € 0 laten zakken"), React.createElement("span", null, "Het vermogen stopt bij € 0; het gemiste bedrag wordt apart opgeteld als tekortbedrag.")))))), React.createElement(Card, {
+    title: "Gegevens"
+  }, React.createElement("div", {
+    className: "small-text",
+    style: {
+      marginBottom: 8
+    }
+  }, "Je invoer wordt automatisch lokaal in deze browser opgeslagen (localStorage) en blijft bewaard na een herlaad. Gebruik export/import om gegevens over te zetten naar een andere browser of computer."), React.createElement("div", {
+    className: "button-row"
+  }, React.createElement("button", {
+    className: "button",
+    onClick: exporteer
+  }, "Exporteren (.json)"), React.createElement("label", {
+    className: "button",
+    style: {
+      cursor: "pointer"
+    }
+  }, "Importeren (.json)", React.createElement("input", {
+    type: "file",
+    accept: "application/json",
+    onChange: importeer,
+    style: {
+      display: "none"
+    }
+  })), React.createElement("button", {
+    className: "button button-danger",
+    onClick: resetAlles
+  }, "Alles wissen")))), React.createElement("main", {
+    className: "main"
+  }, meldingen.length > 0 && React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8
+    }
+  }, meldingen.map((m, i) => React.createElement(Banner, {
+    key: i,
+    type: m.toLowerCase().includes("tekort") ? "danger" : m.includes("prognose") ? "warning" : "info"
+  }, m))), tekortDatum && React.createElement(Banner, {
+    type: "danger"
+  }, React.createElement("b", null, "Let op:"), " vanaf ", React.createElement("b", null, monthLabel(tekortDatum)), " is het vermogen ontoereikend op basis van de huidige aannames.", T.tekortGedrag === "doorrekenen" ? " De cijfers hierna laten een negatief vermogen zien (theoretische doorrekening)." : " Het vermogen wordt vanaf dat moment op € 0 gehouden; zie 'tekortbedrag' in de tabellen voor het gemiste bedrag."), React.createElement("div", {
+    className: "tabs"
+  }, React.createElement("button", {
+    className: "tab" + (tab === "overzicht" ? " active" : ""),
+    onClick: () => setTab("overzicht")
+  }, "Overzicht"), React.createElement("button", {
+    className: "tab" + (tab === "fase1" ? " active" : ""),
+    onClick: () => setTab("fase1")
+  }, "Opbouw"), React.createElement("button", {
+    className: "tab" + (tab === "fase2" ? " active" : ""),
+    onClick: () => setTab("fase2")
+  }, "Overbrugging"), React.createElement("button", {
+    className: "tab" + (tab === "fase3" ? " active" : ""),
+    onClick: () => setTab("fase3")
+  }, "Pensioen")), tab === "overzicht" && React.createElement("div", {
+    className: "summary-grid"
+  }, React.createElement("div", {
+    className: "summary-card"
+  }, React.createElement("div", {
+    className: "fase",
+    style: {
+      color: KLEUR_BLAUW
+    }
+  }, "FASE 1 · OPBOUW"), React.createElement("div", {
+    className: "periode"
+  }, monthLabel(peildatum), " t/m ", monthLabel(stopDatum), " (", fase1.aantalMaanden, " mnd)"), React.createElement("div", {
+    className: "detail"
+  }, "Start: ", EUR.format(T.startBelegging + T.startCash), ". Storting ", EUR.format(T.maandStorting), "/mnd", T.stortingMeeInflatie && T.inflatieAan ? " (groeit mee met inflatie)" : "", ". Rendement ", T.rendementBelegging, "% (beleggingen) / ", T.renteCash, "% (cash)."), React.createElement("div", {
+    className: "eind-label"
+  }, "Eindstand"), React.createElement("div", {
+    className: "eind-bedrag",
+    style: {
+      color: KLEUR_BLAUW
+    }
+  }, EUR.format(fase1.totaalEind))), React.createElement("div", {
+    className: "summary-card"
+  }, React.createElement("div", {
+    className: "fase",
+    style: {
+      color: "#6a9a2a"
+    }
+  }, "FASE 2 · OVERBRUGGING"), React.createElement("div", {
+    className: "periode"
+  }, monthLabel(stopDatum), " t/m ", monthLabel(pensioenDatum), " (", fase2.aantalMaanden, " mnd)"), React.createElement("div", {
+    className: "detail"
+  }, "Netto onttrekking ", EUR.format(T.uitgavenOverbrugging - T.extraInkomenPerMaand), "/mnd nominaal", T.hypotheekMaandlast > 0 ? ` (incl. hypotheeklast ${EUR.format(T.hypotheekMaandlast)}, valt weg ${T.hypotheekAflossingDatum ? `na ${monthLabel(parseMonthString(T.hypotheekAflossingDatum, peildatum))}` : "nooit"})` : "", ". Rendement beleggingen ", T.rendementBelegging, "%/jr, cash ", T.renteCash, "%/jr (apart). Eerst cash op, dan beleggingen.", fase2.tekortBedragCumulatief > 0 && ` Tekortbedrag (cumulatief, niet onttrokken): ${EUR.format(fase2.tekortBedragCumulatief)}.`), React.createElement("div", {
+    className: "eind-label"
+  }, "Eindstand"), React.createElement("div", {
+    className: "eind-bedrag",
+    style: {
+      color: fase2.tekort ? KLEUR_ROOD : KLEUR_GROEN
+    }
+  }, EUR.format(Math.round(fase2.eindVermogen)))), React.createElement("div", {
+    className: "summary-card"
+  }, React.createElement("div", {
+    className: "fase",
+    style: {
+      color: KLEUR_ORANJE
+    }
+  }, "FASE 3 · PENSIOEN"), React.createElement("div", {
+    className: "periode"
+  }, monthLabel(pensioenDatum), " t/m leeftijd ", T.leeftijdOverlijden, " (", fase3.aantalMaanden, " mnd)"), React.createElement("div", {
+    className: "detail"
+  }, "Pensioen + AOW ", EUR.format(T.pensioenInkomen), "/mnd, uitgaven ", EUR.format(T.uitgavenPensioen), "/mnd nominaal. Nominaal tekort op pensioendatum: ", EUR.format(fase3.tekortPerMaandNominaal), "/mnd.", T.inflatieAan ? ` Uitgaven groeien met ${T.inflatie}%/jr (kosteninflatie),` : " Uitgaven blijven nominaal vast,", ` inkomen met ${T.indexatieInkomen}%/jr (indexatie).`, fase3.tekortBedragCumulatief > 0 && ` Tekortbedrag (cumulatief, niet onttrokken): ${EUR.format(fase3.tekortBedragCumulatief)}.`), React.createElement("div", {
+    className: "eind-label"
+  }, "Eindstand"), React.createElement("div", {
+    className: "eind-bedrag",
+    style: {
+      color: fase3.tekort ? KLEUR_ROOD : KLEUR_GREEN_FALLBACK(fase3)
+    }
+  }, EUR.format(fase3.eindVermogen)))), tab === "fase1" && React.createElement("div", null, React.createElement(Toelichting, null, "Elke maand: saldo × (1 + ", fmtPercentPerMaand(T.rendementBelegging), ") + storting ", EUR.format(T.maandStorting), T.stortingMeeInflatie && T.inflatieAan ? " (groeit mee met inflatie vanaf de peildatum)" : "", ". Cash groeit tegen ", T.renteCash, "%/jr. Eenmalige bedragen (", T.posten.filter(p => p.bedrag > 0).map(p => `${p.naam || "post"} ${EUR.format(p.bedrag)}${parseMonthString(p.datum, null) ? ` in ${monthLabel(parseMonthString(p.datum, null))}` : ""}`).join(", ") || "geen", ") worden in hun eigen maand bijgeboekt en draaien vanaf dat moment rendement mee, in welke fase de datum ook valt."), React.createElement("table", null, React.createElement("thead", null, React.createElement("tr", null, React.createElement(Th, {
+    left: true
+  }, "Jaar"), React.createElement(Th, null, "Inleg"), React.createElement(Th, null, "Rendement"), React.createElement(Th, null, "Eenmalig"), React.createElement(Th, null, "Beleggingen"), React.createElement(Th, null, "Cash"), React.createElement(Th, null, "Totaal"))), React.createElement("tbody", null, React.createElement("tr", {
+    className: "totaalrij"
+  }, React.createElement(Td, {
+    left: true,
+    value: `Start (${monthLabel(peildatum)})`
+  }), React.createElement(Td, {
+    value: "—",
+    color: "#84a2c0"
+  }), React.createElement(Td, {
+    value: "—",
+    color: "#84a2c0"
+  }), React.createElement(Td, {
+    value: "—",
+    color: "#84a2c0"
+  }), React.createElement(Td, {
+    value: EUR.format(T.startBelegging)
+  }), React.createElement(Td, {
+    value: EUR.format(T.startCash)
+  }), React.createElement(Td, {
+    value: EUR.format(T.startBelegging + T.startCash),
+    color: KLEUR_BLAUW,
+    bold: true
+  })), fase1.jaarRijen.map((r, i) => React.createElement("tr", {
+    key: i,
+    className: i % 2 ? "odd" : ""
+  }, React.createElement(Td, {
+    left: true,
+    value: r.label
+  }), React.createElement(Td, {
+    value: EUR.format(r.inleg),
+    color: "#9ab6d2"
+  }), React.createElement(Td, {
+    value: EUR.format(r.rendement),
+    color: KLEUR_GROEN
+  }), React.createElement(Td, {
+    value: r.extra > 0 ? EUR.format(r.extra) : "—",
+    color: r.extra > 0 ? KLEUR_AMBER : "#84a2c0"
+  }), React.createElement(Td, {
+    value: EUR.format(r.belegging)
+  }), React.createElement(Td, {
+    value: EUR.format(r.cash)
+  }), React.createElement(Td, {
+    value: EUR.format(r.totaal),
+    color: KLEUR_BLAUW,
+    bold: true
+  }))), React.createElement("tr", {
+    className: "totaalrij"
+  }, React.createElement(Td, {
+    left: true,
+    value: `Start fase 2 (${monthLabel(stopDatum)})`
+  }), React.createElement(Td, {
+    value: ""
+  }), React.createElement(Td, {
+    value: ""
+  }), React.createElement(Td, {
+    value: ""
+  }), React.createElement(Td, {
+    value: "—",
+    color: "#84a2c0"
+  }), React.createElement(Td, {
+    value: "—",
+    color: "#84a2c0"
+  }), React.createElement(Td, {
+    value: EUR.format(Math.round(fase1.totaalEind)),
+    color: KLEUR_AMBER,
+    bold: true
+  }))))), tab === "fase2" && React.createElement("div", null, React.createElement(Toelichting, null, "Cash en beleggingen blijven apart. Elke maand eerst rendement bijschrijven (beleggingen ", T.rendementBelegging, "%/jr = ", fmtPercentPerMaand(T.rendementBelegging), "/mnd, cash ", T.renteCash, "%/jr = ", fmtPercentPerMaand(T.renteCash), "/mnd), daarna de netto behoefte onttrekken: eerst volledig uit cash, pas daarna uit beleggingen. Netto nominaal uit de pot: ", EUR.format(T.uitgavenOverbrugging - T.extraInkomenPerMaand), "/mnd.", T.inflatieAan ? ` Uitgaven groeien met ${T.inflatie}%/jr (kosteninflatie), cumulatief vanaf de peildatum (${monthLabel(peildatum)}).` : " Uitgaven blijven nominaal vast (kosteninflatie staat uit).", ` Extra inkomen wordt geïndexeerd met ${T.indexatieInkomen}%/jr.`, T.hypotheekMaandlast > 0 && ` Hierin zit een hypotheeklast van ${EUR.format(T.hypotheekMaandlast)}/mnd, die ${T.hypotheekAflossingDatum ? `wegvalt na ${monthLabel(parseMonthString(T.hypotheekAflossingDatum, peildatum))}` : "niet wegvalt (geen aflossingsdatum ingevuld)"} en dan wordt afgetrokken van de uitgaven.`, " ", "Bij een tekort: ", T.tekortGedrag === "doorrekenen" ? "het saldo mag negatief worden (doorrekenen)." : "het saldo wordt op € 0 gehouden; het gemiste bedrag staat in 'tekortbedrag'."), fase2.tekortBedragCumulatief > 0 && React.createElement(Banner, {
+    type: "warning"
+  }, "Cumulatief tekortbedrag (niet onttrokken): ", EUR.format(fase2.tekortBedragCumulatief), "."), React.createElement("table", null, React.createElement("thead", null, React.createElement("tr", null, React.createElement(Th, {
+    left: true
+  }, "Jaar"), React.createElement(Th, null, "Leeftijd"), React.createElement(Th, null, "Begin totaal"), React.createElement(Th, null, "Rendement"), React.createElement(Th, null, "Onttrokken"), React.createElement(Th, null, "Inkomen"), React.createElement(Th, null, "Eenmalig"), React.createElement(Th, null, "Cash"), React.createElement(Th, null, "Beleggingen"), React.createElement(Th, null, "Totaal"))), React.createElement("tbody", null, fase2.jaarRijen.map((r, i) => React.createElement("tr", {
+    key: i,
+    className: i % 2 ? "odd" : ""
+  }, React.createElement(Td, {
+    left: true,
+    value: r.jaar
+  }), React.createElement(Td, {
+    value: r.leeftijd,
+    color: "#9ab6d2"
+  }), React.createElement(Td, {
+    value: EUR.format(r.beginSaldo)
+  }), React.createElement(Td, {
+    value: EUR.format(r.rendement),
+    color: KLEUR_GROEN
+  }), React.createElement(Td, {
+    value: `-${EUR.format(r.onttrokken)}`,
+    color: "#9a3a3a"
+  }), React.createElement(Td, {
+    value: EUR.format(r.inkomen),
+    color: "#5a7a4a"
+  }), React.createElement(Td, {
+    value: r.extra > 0 ? EUR.format(r.extra) : "—",
+    color: r.extra > 0 ? KLEUR_AMBER : "#84a2c0"
+  }), React.createElement(Td, {
+    value: EUR.format(r.cash),
+    color: "#6d8db0"
+  }), React.createElement(Td, {
+    value: EUR.format(r.belegging),
+    color: r.belegging >= 0 ? "#9ab6d2" : KLEUR_ROOD
+  }), React.createElement(Td, {
+    value: EUR.format(r.eindSaldo),
+    color: r.eindSaldo >= 0 ? KLEUR_GROEN : KLEUR_ROOD,
+    bold: true
+  })))))), tab === "fase3" && React.createElement("div", null, React.createElement(Toelichting, null, "AOW-leeftijd ", aowTekst, " (", aowBronTekst, ") · pensioen + AOW nominaal ", EUR.format(T.pensioenInkomen), "/mnd, uitgaven nominaal ", EUR.format(T.uitgavenPensioen), "/mnd. Nominaal tekort op pensioendatum:", " ", EUR.format(fase3.tekortPerMaandNominaal), "/mnd uit vermogen; een overschot wordt aan het vermogen toegevoegd. Rendement beleggingen ", T.rendementBelegging, "%/jr (", fmtPercentPerMaand(T.rendementBelegging), "/mnd), cash ", T.renteCash, "%/jr (", fmtPercentPerMaand(T.renteCash), "/mnd), apart bijgehouden; onttrekking eerst uit cash, dan beleggingen.", T.inflatieAan ? ` Uitgaven groeien met ${T.inflatie}%/jr (kosteninflatie), cumulatief vanaf de peildatum (${monthLabel(peildatum)}).` : " Uitgaven blijven nominaal vast (kosteninflatie staat uit).", ` Pensioen + AOW wordt geïndexeerd met ${T.indexatieInkomen}%/jr (0% = geen automatische indexatie).`, T.hypotheekMaandlast > 0 && ` Hierin zit een hypotheeklast van ${EUR.format(T.hypotheekMaandlast)}/mnd, die ${T.hypotheekAflossingDatum ? `wegvalt na ${monthLabel(parseMonthString(T.hypotheekAflossingDatum, peildatum))}` : "niet wegvalt (geen aflossingsdatum ingevuld)"} en dan wordt afgetrokken van de uitgaven.`, " ", "Doorgerekend tot leeftijd ", T.leeftijdOverlijden, " (planningshorizon, geen sterftescenario).", " ", "Bij een tekort: ", T.tekortGedrag === "doorrekenen" ? "het saldo mag negatief worden (doorrekenen)." : "het saldo wordt op € 0 gehouden; het gemiste bedrag staat in 'tekortbedrag'."), fase3.tekortBedragCumulatief > 0 && React.createElement(Banner, {
+    type: "warning"
+  }, "Cumulatief tekortbedrag (niet onttrokken): ", EUR.format(fase3.tekortBedragCumulatief), "."), React.createElement("table", null, React.createElement("thead", null, React.createElement("tr", null, React.createElement(Th, {
+    left: true
+  }, "Leeftijd"), React.createElement(Th, null, "Begin totaal"), React.createElement(Th, null, "Rendement"), React.createElement(Th, null, "Inkomen"), React.createElement(Th, null, "Uitgaven"), React.createElement(Th, null, "Eenmalig"), React.createElement(Th, null, "Cash"), React.createElement(Th, null, "Beleggingen"), React.createElement(Th, null, "Totaal"))), React.createElement("tbody", null, fase3.jaarRijen.map((r, i) => React.createElement("tr", {
+    key: i,
+    className: i % 2 ? "odd" : ""
+  }, React.createElement(Td, {
+    left: true,
+    value: r.leeftijd
+  }), React.createElement(Td, {
+    value: EUR.format(r.beginSaldo)
+  }), React.createElement(Td, {
+    value: EUR.format(r.rendement),
+    color: KLEUR_GROEN
+  }), React.createElement(Td, {
+    value: EUR.format(r.inkomen),
+    color: "#5a7a4a"
+  }), React.createElement(Td, {
+    value: `-${EUR.format(r.uitgaven)}`,
+    color: "#9a3a3a"
+  }), React.createElement(Td, {
+    value: r.extra > 0 ? EUR.format(r.extra) : "—",
+    color: r.extra > 0 ? KLEUR_AMBER : "#84a2c0"
+  }), React.createElement(Td, {
+    value: EUR.format(r.cash),
+    color: "#6d8db0"
+  }), React.createElement(Td, {
+    value: EUR.format(r.belegging),
+    color: r.belegging >= 0 ? "#9ab6d2" : KLEUR_ROOD
+  }), React.createElement(Td, {
+    value: EUR.format(r.eindSaldo),
+    color: r.eindSaldo >= 0 ? KLEUR_GROEN : KLEUR_ROOD,
+    bold: true
+  })))))))));
+}
+function fmtPercentPerMaand(jaarPercentage) {
+  if (typeof jaarPercentage !== "number" || !Number.isFinite(jaarPercentage)) return "—";
+  return (jaarPercentageNaarMaandFactor(jaarPercentage) * 100).toFixed(2) + "%";
+}
+function KLEUR_GREEN_FALLBACK() {
+  return "#2ecc71";
+}
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(Pensioenplanner, null));
+</script>
+</body>
+</html>
